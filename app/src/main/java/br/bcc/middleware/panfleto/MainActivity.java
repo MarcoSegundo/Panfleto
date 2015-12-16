@@ -10,10 +10,10 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import org.json.JSONException;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,49 +33,100 @@ public class MainActivity extends AppCompatActivity {
 
         adpListPanf = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1);
 
-        /*new Task().execute("");
+        //new Task().execute("");
 
-        conecta();*/
+        conectaList();
 
-        adpListPanf.add("Extra");
+        /*adpListPanf.add("Extra");
         adpListPanf.add("Casas Bahia");
-        adpListPanf.add("Saraiva");
+        adpListPanf.add("Saraiva");*/
         listPanfletos.setAdapter(adpListPanf);
 
         listPanfletos.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String panfleto = (String)parent.getItemAtPosition(position);
-
+                String detalhes = conectaDetails(panfleto);
                 Intent intent = new Intent(MainActivity.this, DetailsActivity.class);
-                intent.putExtra("Panfleto",panfleto);
+                intent.putExtra("Panfleto",detalhes);
                 startActivity(intent);
             }
         });
     }
 
-    public void conecta() {
-        Comm mCliente = new Comm(new Endereco("192.168.25.10", "5000"));
+    public void conectaList() {
+        Comm mCliente = new Comm(new Endereco("192.168.43.135", "5000"));
 
         JSONObject response = new JSONObject();
-        try {
-            response.put("op", "retornarNomesServicos");
-            JSONObject data = new JSONObject();
-            data.put("nomeServico", "cea");
-            response.put("data", data);
-            String teste = mCliente.requestAndReceive(response.toString());
+        response.put("op", "retornarNomesServicos");
+        JSONObject data = new JSONObject();
 
-            System.out.println(teste);
-        } catch (JSONException e) {
-            e.printStackTrace();
+        response.put("data", data);
+
+        // passa valores no json
+        // System.out.println(response.toJSONString());
+
+        JSONParser jp = new JSONParser();
+
+        JSONObject m = null;
+        try {
+            m = (JSONObject) jp.parse(mCliente
+                    .requestAndReceive(response.toJSONString()));
+
+            System.out.println(m);
+            JSONArray n = (JSONArray) jp.parse((String) m.get("result"));
+            JSONObject nomeServer = (JSONObject) n.get(0);
+
+            for (int i=0;i<n.size();i++) {
+                JSONObject jo = (JSONObject) n.get(i);
+                String loja = (String) jo.get("nome");
+                adpListPanf.add(loja);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    class Task extends AsyncTask<String, String, String> {
-        private String url_server;
+    public String conectaDetails(String loja){
+        Comm mCliente = new Comm(new Endereco("192.168.43.135", "5000"));
 
+        JSONParser jp = new JSONParser();
+
+        String retorno = "";
+
+        try {
+            JSONObject response = new JSONObject();
+            response.put("op", "retornarLoja");
+            JSONObject data = new JSONObject();
+            data.put("nomeServico", loja);
+            response.put("data", data);
+
+            String enderecoServidor = mCliente.requestAndReceive(response
+                    .toJSONString());
+
+            System.out.println(enderecoServidor);
+
+            JSONObject endereco  = (JSONObject) jp.parse(enderecoServidor);
+
+            JSONObject obj =  (JSONObject) jp.parse((String) endereco.get("result"));
+
+
+            String porta = (String) obj.get("porta");
+            Comm mCliente2 = new Comm(new Endereco("192.168.43.135", porta));
+
+            JSONObject response2 = new JSONObject();
+            response2.put("op", "retornarPanfletos");
+
+            retorno = mCliente2.requestAndReceive(response2.toJSONString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return retorno;
+    }
+
+    class Task extends AsyncTask<String, String, String> {
 
         @Override
         protected void onPreExecute() {
@@ -90,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String file_url) {
-
 
         }
     }
