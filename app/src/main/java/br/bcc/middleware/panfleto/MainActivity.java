@@ -1,8 +1,6 @@
 package br.bcc.middleware.panfleto;
 
-import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,11 +13,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 
+import java.util.HashMap;
+
 public class MainActivity extends AppCompatActivity {
 
-    private ListView listPanfletos;
+    private ListView listLojas;
 
-    private ArrayAdapter<String> adpListPanf;
+    private ArrayAdapter<String> adpListLoj;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,33 +29,28 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        listPanfletos = (ListView) findViewById(R.id.listPanfletos);
+        listLojas = (ListView) findViewById(R.id.listLojas);
 
-        adpListPanf = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1);
-
-        //new Task().execute("");
+        adpListLoj = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1);
 
         conectaList();
 
-        /*adpListPanf.add("Extra");
-        adpListPanf.add("Casas Bahia");
-        adpListPanf.add("Saraiva");*/
-        listPanfletos.setAdapter(adpListPanf);
+        listLojas.setAdapter(adpListLoj);
 
-        listPanfletos.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listLojas.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String panfleto = (String)parent.getItemAtPosition(position);
-                String detalhes = conectaDetails(panfleto);
-                Intent intent = new Intent(MainActivity.this, DetailsActivity.class);
-                intent.putExtra("Panfleto",detalhes);
+                HashMap<String,String> detalhes = conectaDetails(panfleto);
+                Intent intent = new Intent(MainActivity.this, ListActivity.class);
+                intent.putExtra("Panfletos", detalhes);
                 startActivity(intent);
             }
         });
     }
 
     public void conectaList() {
-        Comm mCliente = new Comm(new Endereco("192.168.43.135", "5000"));
+        Comm mCliente = new Comm(new Endereco("192.168.25.13", "5000"));
 
         JSONObject response = new JSONObject();
         response.put("op", "retornarNomesServicos");
@@ -73,14 +68,13 @@ public class MainActivity extends AppCompatActivity {
             m = (JSONObject) jp.parse(mCliente
                     .requestAndReceive(response.toJSONString()));
 
-            System.out.println(m);
+            //System.out.println(m);
             JSONArray n = (JSONArray) jp.parse((String) m.get("result"));
-            JSONObject nomeServer = (JSONObject) n.get(0);
 
             for (int i=0;i<n.size();i++) {
                 JSONObject jo = (JSONObject) n.get(i);
                 String loja = (String) jo.get("nome");
-                adpListPanf.add(loja);
+                adpListLoj.add(loja);
             }
 
         } catch (Exception e) {
@@ -88,12 +82,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public String conectaDetails(String loja){
-        Comm mCliente = new Comm(new Endereco("192.168.43.135", "5000"));
+    public HashMap<String,String> conectaDetails(String loja){
+        Comm mCliente = new Comm(new Endereco("192.168.25.13", "5000"));
 
         JSONParser jp = new JSONParser();
 
-        String retorno = "";
+        HashMap<String,String> retorno = new HashMap<String,String>();
 
         try {
             JSONObject response = new JSONObject();
@@ -105,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
             String enderecoServidor = mCliente.requestAndReceive(response
                     .toJSONString());
 
-            System.out.println(enderecoServidor);
+            //System.out.println(enderecoServidor);
 
             JSONObject endereco  = (JSONObject) jp.parse(enderecoServidor);
 
@@ -113,35 +107,25 @@ public class MainActivity extends AppCompatActivity {
 
 
             String porta = (String) obj.get("porta");
-            Comm mCliente2 = new Comm(new Endereco("192.168.43.135", porta));
+            Comm mCliente2 = new Comm(new Endereco("192.168.25.13", porta));
 
             JSONObject response2 = new JSONObject();
             response2.put("op", "retornarPanfletos");
 
-            retorno = mCliente2.requestAndReceive(response2.toJSONString());
+            JSONObject resp = (JSONObject) jp.parse(mCliente2.requestAndReceive(response2.toJSONString()));
+
+            JSONArray n = (JSONArray) jp.parse((String) resp.get("result"));
+
+            for (int i=0;i<n.size();i++) {
+                JSONObject jo = (JSONObject) n.get(i);
+                String panfle = (String) jo.get("titulo");
+                String descPanfle = (String) jo.get("texto");
+                retorno.put(panfle, descPanfle);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         return retorno;
-    }
-
-    class Task extends AsyncTask<String, String, String> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-        }
-
-        protected String doInBackground(String... args) {
-            System.out.println("tol");
-
-            return null;
-        }
-
-        protected void onPostExecute(String file_url) {
-
-        }
     }
 }

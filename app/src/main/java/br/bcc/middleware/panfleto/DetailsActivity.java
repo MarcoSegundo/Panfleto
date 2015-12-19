@@ -17,7 +17,7 @@ public class DetailsActivity extends AppCompatActivity {
 
         Bundle bundle = getIntent().getExtras();
 
-        if(bundle.containsKey("Panfleto")){
+        if(bundle.containsKey("Panfleto")) {
             String details = bundle.getString("Panfleto");
             textDetailsPanfleto.setText(details);
         }
