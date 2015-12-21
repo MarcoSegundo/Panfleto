@@ -21,10 +21,22 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayAdapter<String> adpListLoj;
 
+    private String ip, porta;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Bundle bundle = getIntent().getExtras();
+
+        if(bundle.containsKey("IP")) {
+            ip = bundle.getString("IP");
+        }
+
+        if(bundle.containsKey("Porta")) {
+            porta = bundle.getString("Porta");
+        }
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
@@ -50,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void conectaList() {
-        Comm mCliente = new Comm(new Endereco("192.168.25.13", "5000"));
+        Comm mCliente = new Comm(new Endereco(ip, porta));
 
         JSONObject response = new JSONObject();
         response.put("op", "retornarNomesServicos");
@@ -83,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public HashMap<String,String> conectaDetails(String loja){
-        Comm mCliente = new Comm(new Endereco("192.168.25.13", "5000"));
+        Comm mCliente = new Comm(new Endereco(ip, porta));
 
         JSONParser jp = new JSONParser();
 
@@ -107,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             String porta = (String) obj.get("porta");
-            Comm mCliente2 = new Comm(new Endereco("192.168.25.13", porta));
+            Comm mCliente2 = new Comm(new Endereco(ip, porta));
 
             JSONObject response2 = new JSONObject();
             response2.put("op", "retornarPanfletos");
